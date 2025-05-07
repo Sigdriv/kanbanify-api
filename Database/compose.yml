@@ -1,0 +1,13 @@
+services:
+  kanban-db:
+    container_name: kanban-db
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./psql/data:/var/lib/postgresql/data/
+      - ./psql/init:/docker-entrypoint-initdb.d
+    ports:
+      - 5432:5432
