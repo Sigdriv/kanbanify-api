@@ -44,7 +44,7 @@ Beskrivelse: %s
 			Role:    anthropic.MessageParamRoleUser,
 			Content: utils.MakeTextContent(prompt),
 		}},
-		Model: anthropic.ModelClaude3_5SonnetLatest,
+		Model: anthropic.ModelClaude3_7SonnetLatest,
 	})
 
 	if err != nil {
