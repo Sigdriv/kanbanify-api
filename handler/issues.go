@@ -64,6 +64,13 @@ func createIssue(c *gin.Context) {
 		return
 	}
 
+	newIssue.Variant, err = classifyIssue(newIssue)
+	if err != nil {
+		logrus.Error("Error classifying issue << ", err)
+		c.IndentedJSON(500, gin.H{"error": "Failed to classify issue"})
+		return
+	}
+
 	conn, err := db.Connect()
 	if err != nil {
 		logrus.Error("Error connecting to database << ", err)
@@ -83,8 +90,8 @@ func createIssue(c *gin.Context) {
 		return
 	}
 
-	kanbanID := fmt.Sprintf("KAN-%d", id)
-	_, err = conn.Exec(c, "UPDATE issues SET kanban_id = $1 WHERE id = $2", kanbanID, id)
+	newIssue.KanbanID = fmt.Sprintf("KAN-%d", id)
+	_, err = conn.Exec(c, "UPDATE issues SET kanban_id = $1 WHERE id = $2", newIssue.KanbanID, id)
 	if err != nil {
 		logrus.Error("Error updating issue ID << ", err)
 		c.IndentedJSON(500, gin.H{"error": "Failed to update issue ID"})
@@ -92,7 +99,7 @@ func createIssue(c *gin.Context) {
 	}
 
 	logrus.Info("Created new issue in database with ID << ", id)
-	c.IndentedJSON(201, gin.H{"id": id})
+	c.IndentedJSON(201, newIssue)
 
 }
 
@@ -114,6 +121,21 @@ func updateIssue(c *gin.Context) {
 	}
 
 	defer conn.Close()
+
+	var issueID int
+	err = conn.QueryRow(c, "SELECT id FROM issues WHERE kanban_id = $1", updatedIssue.KanbanID).Scan(&issueID)
+	if err != nil {
+		logrus.Error("Error fetching issue ID << ", err)
+		c.IndentedJSON(500, gin.H{"error": "Issue not found"})
+		return
+	}
+
+	if issueID == 0 {
+		logrus.Error("Issue not found << ", updatedIssue.KanbanID)
+		c.IndentedJSON(500, gin.H{"error": "Issue not found"})
+		return
+	}
+
 	_, err = conn.Exec(c, "UPDATE issues SET title = $1, description = $2, status = $3, variant = $4 WHERE kanban_id = $5",
 		updatedIssue.Title, updatedIssue.Description, updatedIssue.Status, updatedIssue.Variant, updatedIssue.KanbanID)
 
